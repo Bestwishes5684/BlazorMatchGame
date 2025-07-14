@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Timers;
 
 <style>
     .container {
@@ -31,8 +32,17 @@
 
     List<string> shuffledAnimal = new List<string>();
 
+    int matchesFound=0;
+
+    Timer timer;
+    int tenthsOfSecondsElapsed = 0;
+    string timeDisplay;
+
     protected override void OnInitialized()
     {
+        timer = new Timer(100);
+        timer.Elapsed += Timer_Tick;
+
         SetUpGame();
     }
 
@@ -42,19 +52,91 @@
         shuffledAnimal = animalEmoji
         .OrderBy(item => random.Next())
         .ToList();
+        matchesFound = 0;
+
+        tenthsOfSecondsElapsed = 0;
     }
+
+
+    string lastAnimalFound = string.Empty;
+    string lastDecription = string.Empty;
+
+    private void ButtonClick(string animal,string animalDescription)
+    {
+        if (lastAnimalFound == string.Empty)
+        {
+
+            lastAnimalFound = animal;
+            lastDecription = animalDescription;
+
+            timer.Start();
+
+        }
+        else if((lastAnimalFound==animal) &&(animalDescription!=lastDecription))
+        {
+
+            lastAnimalFound = string.Empty;
+
+            shuffledAnimal = shuffledAnimal
+                .Select(a => a.Replace(animal, string.Empty))
+                .ToList();
+            matchesFound++;
+            if (matchesFound == 8)
+            {
+                timer.Stop();
+                timeDisplay = "PlayAgain?";
+                SetUpGame();
+            }
+
+        }
+        else
+        {
+            lastAnimalFound = string.Empty;
+
+        }
+
+
+
+    }
+
+    private void Timer_Tick(object source, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            tenthsOfSecondsElapsed++;
+            timeDisplay = (tenthsOfSecondsElapsed / 10F)
+        .ToString("0.0s");
+            StateHasChanged();
+        });
+    }
+
+
 }
 
 <div class="container">
     <div class="row">
-        @foreach(var animal in shuffledAnimal)
-{
+        @for(var animalNumber=0; animalNumber<shuffledAnimal.Count; animalNumber++)
+            {
+                var animal = shuffledAnimal[animalNumber];
+                var uniqueDescription = $"Button #{animalNumber}";
                 <divc class="col-3">
-                    <button type="button" class="btn btn-outline-dark">
+                    <button @onclick="@(()=> ButtonClick(animal,uniqueDescription))" class="btn btn-outline-dark">
                         <h1>@animal</h1>
                     </button>
                 </divc>
-}
+         }
+    </div>
+
+    <div class="row">
+        <h2>Matches found:@matchesFound</h2>
+    </div>
+
+    <div class="row">
+        <h2>Time:@timeDisplay</h2>
     </div>
 </div>
+
+
+
+
 
